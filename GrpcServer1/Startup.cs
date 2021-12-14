@@ -17,6 +17,16 @@ namespace GrpcServer1
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddGrpc();
+                        
+            //https://docs.microsoft.com/en-us/aspnet/core/grpc/browser?view=aspnetcore-6.0
+
+            services.AddCors(o => o.AddPolicy("AllowAll", builder =>
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader()
+                       .WithExposedHeaders("Grpc-Status", "Grpc-Message", "Grpc-Encoding", "Grpc-Accept-Encoding");
+            }));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -29,9 +39,16 @@ namespace GrpcServer1
 
             app.UseRouting();
 
+            app.UseGrpcWeb(); // Must be added between UseRouting and UseEndpoints
+            //app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
+
+            app.UseCors();
+
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGrpcService<GreeterService>();
+                endpoints.MapGrpcService<GreeterService>()
+                    .EnableGrpcWeb()
+                    .RequireCors("AllowAll");
 
                 endpoints.MapGet("/", async context =>
                 {
